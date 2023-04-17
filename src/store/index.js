@@ -1,241 +1,148 @@
-import { HashConnect } from 'hashconnect';
+import { HashConnect } from "hashconnect";
 import { defineStore } from "pinia";
-import swal from "sweetalert2";
+import {
+  AccountId,
+  TokenAssociateTransaction,
+  TokenGrantKycTransaction,
+  TransferTransaction,
+} from "@hashgraph/sdk";
 
-/**
- * This one can be removed as it's implemented only for the
- * research purposes.
- */
-export const useHashConnect = defineStore('hashconnect', () => {
-  let isLoading = false;
-  let connected = false;
-  let isConnected = false;
-  let pairingData = {};
+export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
+  // TODO: this is custom token
+  // - created with script `createKudos()`
+  // - when transferring USDC or USDT (stablecoin)
+  //   mock tokenId here or consider adding this 
+  //   to .env file.
+  // - mock USDC/USDT erc20 here.
+  // const tokenId = "0.0.4086678";
+  const tokenId = import.meta.env.VITE_BARRAGE_TOKEN_ID;
+
+  // Not in use currently
+  // double check this if it's 
+  // necessary.
   let availableExtension = null;
-  let hashConnect = new HashConnect();
-  let showAccountDialog = false;
-  let userAddressHedera = "";
+
+  // TODO add network to .env
+  let network = import.meta.env.VITE_HEDERA_NETWORK;
+
+  // This is the accountIc
+  // of the connected (paired) wallet.
+  let accountId = "";
+
+  // Object that holds save data obtained
+  // when wallet is paired with DAPP or APP.
   let saveData = {
     topic: "",
     pairingString: "",
     privateKey: "",
     pairedWalletData: {},
-    pairedAccounts: []
+    pairedAccounts: [],
   };
+
+  // APP metadata.
   let appMetadata = {
-    network: "testnetwork",
+    network,
     name: "Barrageongo",
     description: "An example Barrage-Hedera dApp",
   };
 
-  async function initHashconnect() {
-    hashConnect = new HashConnect(true);
+  // HashConnect instance.
+  let hashConnect = new HashConnect();
 
-    //initialize and use returned data
-    let initData = await hashConnect.init(
-      appMetadata,
-      "testnet",
-      false
-    );
+  // Signer instance.
+  let signer = null;
 
-    saveData.topic = initData.topic;
-    saveData.pairingString = initData.pairingString;
+  /**
+   * Connect HashPack wallet.
+   */
+  async function connectWallet() {
+    await hashConnect.init(appMetadata, network, false);
 
-    //Saved pairings will return here, generally you will only have one unless you are doing something advanced
-    pairingData = initData.savedPairings[0];
+    await setUpHashConnectEvents();
 
-    //register events
-    setUpHashConnectEvents();
+    return hashConnect.connectToLocalWallet(saveData.pairingString);
   }
 
+  /**
+   * Setup connection handler for events.
+   */
   async function setUpHashConnectEvents() {
     // fired when a extension is found
     hashConnect.foundExtensionEvent.on((data) => {
       availableExtension = data;
-
-      const pairings = hashConnect.hcData.pairingData;
-
-      console.log('## pairings ##', pairings);
-
-      hashConnect.findLocalWallets();
-
-      hashConnect.connectToLocalWallet();
-    });
-  }
-
-  async function connectToExtension() {
-    // will automatically pop up a pairing
-    // request in the HashPack extension
-    hashConnect.connectToLocalWallet();
-  }
-
-  function clearDataInLocalStorage() {
-    localStorage.clear()
-  };
-
-  function clearParing() {
-    saveData.pairedAccounts = []
-    clearDataInLocalStorage();
-    window.location.reload()
-  };
-
-  async function connectHashConnectWallet() {
-    try {
-      hashConnect.value = new HashConnect(false);
-      let loadData = await loadLocalData();
-
-      console.log('🚀 ~ file: index.js:43 ~ connectHashConnectWallet ~ loadData:', loadData);
-
-      if (true) {
-        let initData = await hashConnect.init(appMetadata);
-
-        console.log(' ### initData ###', initData);
-        
-        saveData.value.privateKey = initData.privKey;
-        
-        const state = await hashConnect.connect();
-
-        saveData.value.topic = state.topic;
-
-        saveData.value.pairingString = hashConnect.generatePairingString(state, "testnet", true);
-
-        await parsePairingString();
-
-        await setUpEvents();
-
-        console.log('saveData', saveData);
-
-        if (saveData.value.pairedAccounts.length === 0) {
-          showAccountDialog.value = true;
-        }
-        else {
-          let saveData = await getDataInLocalstorage();
-          if (saveData.found) {
-            saveData = saveData.data
-            userAddressHedera = saveData.value.pairedAccounts[0]
-          }
-        }
-      }
-      else {
-        console.log('############# ELSE  ###########');
-        console.log("Paring String: ", saveData.value.pairingString)
-        console.log("Paired Accounts: ", saveData.value.pairedAccounts)
-
-        if (saveData.value.pairedAccounts.length > 0) {
-          await hashConnect.init(appMetadata, saveData.value.privateKey);
-          await hashConnect.connect(saveData.value.topic, saveData.value.pairedWalletData);
-          await parsePairingString();
-          await setUpEvents();
-          console.log("Paired hashpack: ")
-          if (saveData.value.pairedAccounts.length === 0) {
-            showAccountDialog.value = true;
-          }
-          else {
-            saveData = await getDataInLocalstorage();
-            if (saveData.found) {
-              saveData = saveData.data
-              userAddressHedera = saveData.value.pairedAccounts[0]
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.log(" ####### error connecting  hash connect wallet:  #######", error)
-      errorWithFooterExtension({
-        errorTitle:"Mising Extension",
-        message: "Seems like you dont have HashConnect installed please use the below link to download",
-        footer: `<a href= https://www.hashpack.app/hashconnect> Download HashPack</a>`,
-      });
-    }
-  }
-
-  async function errorWithFooterExtension(context, message) {
-    swal.fire({
-      icon: "error",
-      title: message.errorTitle,
-      text: message.message,
-      footer: message.footer,
-    }).then((result) => {
-      window.location.reload()
-    });
-  };
-
-  async function getDataInLocalstorage() {
-    var data = localStorage.getItem("hashconnectData");
-    if (data) {
-      return {
-        data: JSON.parse(data),
-        found: true
-      }
-    }
-    else {
-      return {
-        data: {},
-        found: false
-      }
-    }
-  };
-
-  async function loadLocalData() {
-    let foundData = localStorage.getItem("hashconnectData");
-    console.log("localDataFound: ", foundData);
-    if (foundData) {
-      saveData.value = JSON.parse(foundData);
-      console.log("Found local data", saveData)
-      return true;
-    }
-    else
-      return false;
-  };
-  
-  async function parsePairingString() {
-    console.log('### saveData ###', saveData);
-    pairingData = hashConnect.decodePairingString(saveData.value.pairingString);
-  }
-
-  async function saveDataInLocalstorage() {
-    let data = JSON.stringify(saveData);
-
-    localStorage.setItem("hashconnectData", data);
-  };
-  
-  async function setUpEvents() {
-    hashConnect.foundExtensionEvent.on(async (data) => {
-      availableExtension.value = data;
-
-      // hashConnect.hcData.pairingData;
-
-      hashConnect.findLocalWallets();
-
-      hashConnect.connectToLocalWallet();
     });
 
+    // This is the pairing event 
+    // where data is obtained for further
+    // communication between wallet and APP.
     hashConnect.pairingEvent.on((data) => {
-      console.log("### Paired with wallet ###", data);
-
-      saveData.pairedWalletData = data.metadata;
-
-      data.accountIds.forEach(id => {
-        if (saveData.pairedAccounts.indexOf(id) == -1)
-          saveData.pairedAccounts.push(id);
-      })
-      userAddressHedera = saveData.pairedAccounts[0]
-      saveDataInLocalstorage();
+      accountId = data.accountIds[0];
+      saveData.topic = data.topic;
+      const provider = hashConnect.getProvider(network, data.topic, accountId);
+      signer = hashConnect.getSigner(provider);
     });
 
-
-    hashConnect.transactionEvent.on((data) => {
-      //this will not be common to be used in a dapp
-      console.log("transaction event callback: ", data);
+    // fired when HashConnect loses connection,
+    // pairs successfully, or is starting connection
+    hashConnect.connectionStatusChangeEvent.on((state) => {
+      console.log("hashconnect state change event", state);
     });
-  };
+  }
 
-  function propagateError(context, message) {
-    swal.fire("Error!", message.error, "error").then((result) => {
-      /* Read more about isConfirmed, isDenied below */
-      if (result.isConfirmed) {}
-    });
-  };
+  /**
+   * Send transaction using connected wallet as signer.
+   */
+  async function sendTransaction(amount, accId) {
+    if (!accountId) {
+      throw "You must pair wallet with the APP first.";
+    }
+    const tx = await new TransferTransaction()
+      .addTokenTransfer(tokenId, AccountId.fromString(accountId), -amount)
+      .addTokenTransfer(tokenId, AccountId.fromString(accId), amount)
+      .freezeWithSigner(signer);
 
-  return { connectHashConnectWallet };
+    await tx.executeWithSigner(signer);
+  }
+
+  /**
+   * Associate token with account.
+   */
+  async function associateTokenWithAccount() {
+    const tx = await new TokenAssociateTransaction()
+      .setAccountId(accountId)
+      .setTokenIds([tokenId]);
+
+    await tx.executeWithSigner(signer);
+
+    let kycEnableTx = await new TokenGrantKycTransaction()
+      .setAccountId(id)
+      .setTokenId(tokenId)
+      .freezeWith(client)
+      .sign(kycKey);
+
+    await kycEnableTx.execute(client);
+  }
+
+  return { associateTokenWithAccount, connectWallet, sendTransaction };
 });
+
+
+
+
+
+
+/** 
+   * Transfer -> HBAR
+   * Send transaction using connected wallet as signer.
+   */
+  // async function sendTransaction(amount, accId) {
+  //   if (!accountId) {
+  //     throw 'You must pair wallet with the APP first.'
+  //   }
+  //   const tx = await new TransferTransaction()
+  //     .addHbarTransfer(AccountId.fromString(accountId), -amount)
+  //     .addHbarTransfer(AccountId.fromString(accId), amount)
+  //     .freezeWithSigner(signer);
+
+  //   await tx.executeWithSigner(signer);
+  // }

@@ -1,10 +1,9 @@
 import { Client, PrivateKey, TokenCreateTransaction } from "@hashgraph/sdk";
-
 /**
  * Constants.
  */
-const treasuryAccountID = '0.0.1521';
-const treasuryPrivateKey = PrivateKey.fromString('302e020100300506032b657004220420b64f35f8fff0920db2357915a8de862dca19e0f658232a04c0812cab9ebb7530');
+const treasuryAccountID = import.meta.env.VITE_OPERATOR_ID;
+const treasuryPrivateKey = PrivateKey.fromString(import.meta.env.VITE_OPERATOR_KEY);
 const treasuryPublicKey = treasuryPrivateKey.publicKey;
 
 // Create a Hedera client
