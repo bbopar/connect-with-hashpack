@@ -1,3 +1,3 @@
-import createKudos from './createKudos';
+import createKudos from "./createKudos";
 
 export { createKudos };

@@ -2,7 +2,7 @@
 
 This guide provides instructions on how to connect and interact with the Hedera blockchain platform, create custom tokens on the testnet, and set up your app to work with HashPack wallet.
 
-## Prerequisites
+### PREREQUISITES
 
 - Node.js and npm installed
 - Hedera JavaScript SDK installed: `@hashgraph/sdk`
@@ -16,59 +16,70 @@ VITE_USDT_TOKEN_ID=<your_USDT_token_id>
 VITE_BARRAGE_TOKEN_ID=<your_barrage_token_id>
 ```
 
-## Scripts directory
-### Create Kudos token on the testnet
+### FOR TESTNET
 
-This script creates a Kudos token on the Hedera Hashgraph network using the Hedera JavaScript SDK. It sets up a client connected to the testnet, defines the token properties, and executes a `TokenCreateTransaction` to create the token.
+Fungible (ERC20) stablecoin's are not available on the Hedera `testnet`.
 
-
-### Important Note for Testnet
-
-ERC20 stablecoin's are not available on the Hedera `testnet`.
-
-If you are on the `testnet` and you want to test the code then you should customize the `createKudos` script and create you custom token on the `testnet`. 
+If you are on the `testnet` and you want to test the code then you should customize the `createKudos` script and create your custom token on the `testnet`. 
 
 After token is created save `tokenId` to your .env file. The `tokenId` will be necessary for further development and testing.
 
+### SCRIPTS DIRECTORY
+
+### `createKudos.js`
+
+This script creates a Kudos token on the Hedera Hashgraph network using the Hedera JavaScript SDK. It sets up a client connected to the testnet, defines the token properties, and executes a `TokenCreateTransaction` to create the token.
+
+### `associateTokenWithAccount.js`
+
+To associate token with an account it's required to pass the `tokenId` and `accountId` that you want to be associated.
+
+### `tokenGrantKycToAccount.js`
+
+To grant KYC for account it's required to pass the `tokenId` and `accountId` that you want to grant KYC for.
+
+
+
 ## Connect APP with HashPack wallet.
 
-## Prerequisites
+### PREREQUISITES
 - Node.js and npm installed
 - HashPack wallet extension installed (in the browser).
 - Install all the dependencies from `package.json`.
 - Setup `.env` file.
 
-After custom token is created for `testnet`, next step is to connect your HashPack wallet with the APP. You must have the HashPack extension installed.
+After custom token is created for `testnet`, next step is to connect your HashPack wallet with the DAPP.
 
-## Running the APP
+### RUN the Vue + Vite DAPP
 
 ```
 npm run dev
 ```
 
-### Connecting the HashPack wallet with the APP
+### CONNECT HASHPACK WALLET WITH THE DAPP
 
-- Press the button `Connect Wallet` this should prompt with the screen for wallet Login.
+- Press the button `Connect Wallet` this should prompt another screen for HashPack wallet login.
 
-- After Login, the next step is to `approve` the connection but only non-ledger accounts can be connected. To create non-ledger account you must create account from your main account on the HashPack wallet.
+- After login, the next step is to `approve` the connection. Only non-ledger accounts can be connected with the DAPPs. 
 
-- This should complete the connection process. When you are on `testnet`, HashPack wallet will indicate it with the message.
+- To create non-ledger account you must create an account from your main HashPack wallet.
 
+- This should complete the connection process.
 
-### Account setup for ERC20 token
+### ACCOUNT SETUP
  
-- If you want to transfer ERC20 token to new account then the following actions are required:
-  - Associate account with the Token
-  - Grant KYC for the Token
+- If you want to transfer Fungible token to new account then the following actions are required:
+  - Associate account with the Fungible token
+  - Grant KYC for the Fungible token
 
-After you connect your wallet and press the button `Associate account with token` your new token should be associated with your account and KYC should be granted.
+After you connect your wallet, pressing the button `Associate` should associate account with the token.
 
-The account receiver must complete the same actions otherwise it won't be able to receive ERC20 token. 
+The account receiver must complete the same actions otherwise it won't be able to receive Fungible tokens. 
 
-### Transfer ERC20 tokens from account to account after connecting your wallet with the APP
+### TRANSFER FUNGIBLE TOKENS
 
-- For transferring tokens from your account to another account your APP must be connected with the HashPack wallet.
+- For transferring tokens from your account to another account your DAPP must be connected with the HashPack wallet.
 
-- The amount of tokens and the account id must be provided for `Token Transfer`.
+- Token must be associated with both accounts sender and receiver.
 
-- Press the button `Send transaction`, then HashPack wallet will prompt you with the `Approve message` which is trx signature and then you transaction will be completed.
+- Press the button `Send`, then HashPack wallet will prompt you with the `Approval` which is actually transaction signature and that completed the token transfer.

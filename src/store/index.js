@@ -11,31 +11,25 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
   // TODO: this is custom token
   // - created with script `createKudos()`
   // - when transferring USDC or USDT (stablecoin)
-  //   mock tokenId here or consider adding this 
+  //   mock tokenId here or consider adding this
   //   to .env file.
-  // - mock USDC/USDT erc20 here.
-  // const tokenId = "0.0.4086678";
   const tokenId = import.meta.env.VITE_BARRAGE_TOKEN_ID;
 
   // Not in use currently
-  // double check this if it's 
-  // necessary.
+  // double check this if it's necessary.
   let availableExtension = null;
 
-  // TODO add network to .env
   let network = import.meta.env.VITE_HEDERA_NETWORK;
 
-  // This is the accountIc
+  // This is the accountId
   // of the connected (paired) wallet.
   let accountId = "";
 
-  // Object that holds save data obtained
+  // Object that holds data obtained
   // when wallet is paired with DAPP or APP.
   let saveData = {
     topic: "",
     pairingString: "",
-    privateKey: "",
-    pairedWalletData: {},
     pairedAccounts: [],
   };
 
@@ -49,14 +43,16 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
   // HashConnect instance.
   let hashConnect = new HashConnect();
 
-  // Signer instance.
+  // Will be signer instance.
   let signer = null;
 
   /**
    * Connect HashPack wallet.
    */
   async function connectWallet() {
-    await hashConnect.init(appMetadata, network, false);
+    const initData = await hashConnect.init(appMetadata, network, false);
+    saveData.pairingString = initData.pairingString;
+    saveData.pairedAccounts = initData.savedPairings;
 
     await setUpHashConnectEvents();
 
@@ -72,7 +68,7 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
       availableExtension = data;
     });
 
-    // This is the pairing event 
+    // This is the pairing event
     // where data is obtained for further
     // communication between wallet and APP.
     hashConnect.pairingEvent.on((data) => {
@@ -115,7 +111,7 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
     await tx.executeWithSigner(signer);
 
     let kycEnableTx = await new TokenGrantKycTransaction()
-      .setAccountId(id)
+      .setAccountId(accountId)
       .setTokenId(tokenId)
       .freezeWith(client)
       .sign(kycKey);
@@ -125,24 +121,3 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
 
   return { associateTokenWithAccount, connectWallet, sendTransaction };
 });
-
-
-
-
-
-
-/** 
-   * Transfer -> HBAR
-   * Send transaction using connected wallet as signer.
-   */
-  // async function sendTransaction(amount, accId) {
-  //   if (!accountId) {
-  //     throw 'You must pair wallet with the APP first.'
-  //   }
-  //   const tx = await new TransferTransaction()
-  //     .addHbarTransfer(AccountId.fromString(accountId), -amount)
-  //     .addHbarTransfer(AccountId.fromString(accId), amount)
-  //     .freezeWithSigner(signer);
-
-  //   await tx.executeWithSigner(signer);
-  // }
