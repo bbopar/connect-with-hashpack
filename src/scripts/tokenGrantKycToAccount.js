@@ -13,15 +13,19 @@ client.setOperator(treasuryAccountID, treasuryPrivateKey);
 
 /**
  * @description Grant KYC to account for Token.
+ * 
+ * @param {String} accountId AccountId to grant KYC for FT or NFT. 
+ * @param {String} tokenId TokenID to grant KYC for account. 
+ * @param {String} privKey privKey this is the privKey for user that wants to grant KYC for the token.
  *
  * @returns {Boolean} success
  */
-export default async function grantKYCForToken(accountId, tokenId) {
+export default async function grantKYCForToken(accountId = undefined, tokenId = undefined, privKey = undefined) {
   let kycEnableTx = await new TokenGrantKycTransaction()
     .setAccountId(accountId)
     .setTokenId(tokenId)
     .freezeWith(client)
-    .sign(treasuryPrivateKey);
+    .sign(privKey);
 
   await kycEnableTx.execute(client);
 

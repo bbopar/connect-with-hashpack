@@ -3,15 +3,17 @@ import { createKudos } from '../scripts';
 import { ref } from "vue";
 import { useHashConnectWallet } from '../store'
 
-let message = ref('Welcome to the Barrango');
 let tokenID = ref("");
 let amount = ref("");
 let accountId = ref("");
-let msgAssociate = ref('Associate your account with the custom token.');
-let msgConnectWallet = ref('Connect your wallet with the APP here.');
-let msgSendToken = ref('Send token from your wallet to desired account.');
-let msgCreateCustomToken = ref('Here you can create custom token.');
-let msgForToken = ref('The custom token is created to test the functionality of transferring ERC20 tokens on Hedera blockchain platform from account to account.\n This will not be necessary when we want to include stablecoin transfer.\n USDC or USDT ERC20 tokens are not available on Hedera testnet env.');
+// Fungible token ID.
+let ftID = ref("");
+// ftAssID Fungible ID to associate with.
+let ftAssID = ref("");
+let msg = ref('Create Fungible token. This will create the Fungible token from Treasury account that is defined in .env file.');
+let grantKYCMsg = ref('Grant KYC to connected account for the Fungible token created in the previous step.');
+let msgAssAcc = ref('In case association with the token does not work then associate connected account with the Fungible token created in the previous step here.');
+let msgSendTrx = ref('Transfer fungible tokens from connected account to provided account');
 
 const hcWallet = useHashConnectWallet();
 
@@ -21,8 +23,12 @@ const hcWallet = useHashConnectWallet();
  * Here connected wallet account will 
  * be associated with the token.
  */
- async function associateAcc() {
-  await hcWallet.associateTokenWithAccount();
+async function associateAcc() {
+  await hcWallet.associateTokenWithAccount(ftID.value);
+}
+
+async function grantKYCForAccount() {
+  await hcWallet.grantKYCForConnectedAccount(ftID.value);
 }
 
 /**
@@ -44,36 +50,234 @@ async function initiateSendTransaction() {
  */
 async function handleCreateKudos() {
   let token = await createKudos();
-  tokenID = token.num.low;
+  tokenID.value = `0.0.${token.num.low}`;
 }
 
 </script>
 
 <template>
   <div>
-    <h1>{{ message }}</h1>
-    <h2>{{ msgCreateCustomToken }}</h2>
-    <h6>{{ msgForToken }}</h6>
-    <button @click="handleCreateKudos">Create Tokens</button>
-    <h2>{{ msgConnectWallet }}</h2>
-    <button @click="handleWalletConnection">Connect Wallet</button>
-    <h2>{{ msgAssociate }}</h2>
-    <button @click="associateAcc">Associate account with token</button>
-    <h2>{{ msgSendToken }}</h2>
-    <label>Amount: <input type="text" v-model="amount"></label>
-    <label>Account ID: <input type="text" v-model="accountId"></label>
-    <button @click="initiateSendTransaction">Send transaction</button>
-    <p>TokenID: {{ tokenID }}</p>
+    <div>
+      <button class="connect-wallet-btn" @click="handleWalletConnection">Connect Wallet</button>
+      <p>TokenID: {{ tokenID }}</p>
+    </div>
+
+    <div>
+      <h4> {{ msg }} </h4>
+      <button class="create-tokens-btn" @click="handleCreateKudos">Create Tokens</button>
+    </div>
+
+    <div class="input-ft-id">
+      <label>Token ID:</label>
+      <input type="text" v-model="ftID">
+    </div>
+
+    <div>
+      <h5> {{ grantKYCMsg }} </h5>
+      <button class="grant-kyc-to-acc-btn" @click="grantKYCForAccount">Grant KYC for FT</button>
+    </div>
+
+    <div class="input-send-trx">
+      <label>Amount:</label>
+      <input type="text" v-model="amount">
+      <label>Account ID:</label>
+      <input type="text" v-model="accountId">
+    </div>
+
+    <div>
+      <h7> {{ msgSendTrx }} </h7>
+      <button class="send-trx-btn" @click="initiateSendTransaction">Send transaction</button>
+    </div>
+
+    <div class="input-ass-ft-id">
+      <label>Token ID:</label>
+      <input type="text" v-model="ftAssID">
+    </div>
+
+    <div>
+      <h8> {{ msgAssAcc }} </h8>
+      <button class="associate-acc-btn" @click="associateAcc">Associate acc with FT</button>
+    </div>
   </div>
 </template>
 
-
-
 <style scoped>
-h2 {
-  color: #42b983;
+.connect-wallet-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: blue;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
 }
+
+.create-tokens-btn {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  transform: translateY(-50%);
+  background-color: #1E90FF;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.grant-kyc-to-acc-btn {
+  position: absolute;
+  top: 30%;
+  left: 10%;
+  transform: translateY(-50%);
+  background-color: #1E90FF;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.send-trx-btn {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  transform: translateY(-50%);
+  background-color: #1E90FF;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.input-ft-id {
+  position: absolute;
+  top: 35%;
+  left: 10%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.input-send-trx {
+  position: absolute;
+  top: 55%;
+  left: 10%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.input-send-trx label {
+  margin-right: 10px;
+}
+
+.associate-acc-btn {
+  position: absolute;
+  top: 68%;
+  left: 10%;
+  transform: translateY(-50%);
+  background-color: #1E90FF;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.input-ass-ft-id {
+  position: absolute;
+  top: 72%;
+  left: 10%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.input-ass-ft-id label {
+  margin-right: 10px;
+}
+
+
+
+h2 {
+  color: #dc0707;
+}
+
 h1 {
-  color: #42b983;
+  color: #b1b942;
+}
+
+h4 {
+  position: absolute;
+  top: 12%;
+  left: 10%;
+  background-color: rgb(182, 182, 193);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+h5 {
+  position: absolute;
+  top: 36%;
+  left: 10%;
+  background-color: rgb(182, 182, 193);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+h6 {
+  position: absolute;
+  top: 60%;
+  left: 10%;
+  background-color: rgb(182, 182, 193);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+h7 {
+  font-weight: bold;
+  position: absolute;
+  top: 58%;
+  left: 10%;
+  background-color: rgb(182, 182, 193);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+h8 {
+  font-weight: bold;
+  position: absolute;
+  top: 76%;
+  left: 10%;
+  background-color: rgb(182, 182, 193);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+}
+
+p {
+  position: absolute;
+  top: 19%;
+  left: 10%;
+  transform: translateY(-50%);
+  background-color: rgb(168, 168, 186);
+  color: rgb(237, 1, 1);
+  border: none;
+  padding: 10px;
+  font-size: 16px;
 }
 </style>

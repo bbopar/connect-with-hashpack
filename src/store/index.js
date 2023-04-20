@@ -103,21 +103,37 @@ export const useHashConnectWallet = defineStore("hashConnectWallet", () => {
   /**
    * Associate token with account.
    */
-  async function associateTokenWithAccount() {
+  async function associateTokenWithAccount(ftID = undefined) {
+    if (!ftID && !tokenId) {
+      throw "MISSING PARAMS";
+    }
+
+    // Fungible token to associate.
+    let ftToAss = !ftID ? tokenId : ftID;
+
     const tx = await new TokenAssociateTransaction()
       .setAccountId(accountId)
-      .setTokenIds([tokenId]);
+      .setTokenIds([ftToAss])
+      .freezeWithSigner(signer);
 
     await tx.executeWithSigner(signer);
+  }
+
+  async function grantKYCForConnectedAccount(ftID = undefined) {
+    if (!ftID && !tokenId) {
+      throw "MISSING PARAMS";
+    }
+
+    // Fungible token to grant KYC for.
+    let ftToAss = !ftID ? tokenId : ftID;
 
     let kycEnableTx = await new TokenGrantKycTransaction()
       .setAccountId(accountId)
-      .setTokenId(tokenId)
-      .freezeWith(client)
-      .sign(kycKey);
+      .setTokenId(ftToAss)
+      .freezeWithSigner(signer);
 
-    await kycEnableTx.execute(client);
+    await kycEnableTx.executeWithSigner(signer);
   }
 
-  return { associateTokenWithAccount, connectWallet, sendTransaction };
+  return { associateTokenWithAccount, connectWallet, grantKYCForConnectedAccount, sendTransaction };
 });
